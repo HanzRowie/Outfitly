@@ -2,9 +2,13 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import User
 
-class CustomUser(AbstractUser):
+class User(AbstractUser):
     email = models.EmailField(unique=True)
-    profile = models.ImageField(upload_to="profile_pics/",blank=True, null=True)
+    profile = models.ImageField(
+        upload_to="profiles/",
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return self.username
@@ -23,5 +27,6 @@ class OTPVerification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.purpose}"
+    
 
 
