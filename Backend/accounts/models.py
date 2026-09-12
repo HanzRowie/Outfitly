@@ -15,14 +15,29 @@ class User(AbstractUser):
 
 
 class OTPVerification(models.Model):
+
     OTP_PURPOSES = (
         ('registration', 'Registration'),
         ('password_reset', 'Password Reset'),
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="otp_verifications"
+    )
+
     otp = models.CharField(max_length=6)
+
+    purpose = models.CharField(
+        max_length=20,
+        choices=OTP_PURPOSES
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateField()
+
+    expires_at = models.DateTimeField()
+
     is_verified = models.BooleanField(default=False)
 
     def __str__(self):
