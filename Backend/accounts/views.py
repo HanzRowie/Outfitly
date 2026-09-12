@@ -7,11 +7,12 @@ from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .utils import send_otp_email
-from accounts.models import OTPVerification
+from accounts.models import OTPVerification, User
 
-from accounts.serializers import OTPVerificationSerializer, RegisterSerializer
+from accounts.serializers import OTPVerificationSerializer, RegisterSerializer, ResendOTPSerializer, LoginSerializer
 
 class RegisterView(APIView):
     def post(self,request):
@@ -33,7 +34,7 @@ class RegisterView(APIView):
             expires_at=expires_at,
         )
 
-        send_otp_email(user,otp,"registration")
+        send_otp_email(user,otp)
 
         return Response(
             {
@@ -63,7 +64,7 @@ class VerifyOTPView(APIView):
 
         try:
             otp_record = OTPVerification.objects.get(
-                user_email=email,
+                user__email=email,
                 otp=otp,
                 purpose="registration",
                 is_verified=False,
@@ -93,6 +94,12 @@ class VerifyOTPView(APIView):
             update_fields=["is_verified"]
         )
 
+        user = otp_record.user
+        user.is_active = True
+        user.save(
+            update_fields=["is_active"]
+        )
+
         return Response(
             {
                 "message": "OTP verified successfully. Your account is now active"
@@ -101,5 +108,113 @@ class VerifyOTPView(APIView):
         )
     
     
+class ResendOTPView(APIView):
+    def post(self, request):
 
+        serializer = ResendOTPSerializer(
+            data=request.data
+        )
 
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        email = serializer.validated_data["email"]
+
+        # Find the user
+        try:
+            user = User.objects.get(
+                email=email
+            )
+
+        except User.DoesNotExist:
+
+            return Response(
+                {
+                    "error": "User with this email does not exist."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Check whether email is already verified
+        if user.is_active:
+
+            return Response(
+                {
+                    "error": "This email is already verified."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Invalidate old registration OTPs
+        OTPVerification.objects.filter(
+            user=user,
+            purpose="registration",
+            is_verified=False,
+        ).update(
+            is_verified=True
+        )
+
+        # Generate new OTP
+        otp = str(
+            random.randint(100000, 999999)
+        )
+
+        # New OTP expires in 5 minutes
+        expires_at = (
+            timezone.now()
+            + timedelta(minutes=5)
+        )
+
+        # Save new OTP
+        OTPVerification.objects.create(
+            user=user,
+            otp=otp,
+            purpose="registration",
+            expires_at=expires_at,
+        )
+
+        # Send new OTP email
+        send_otp_email(
+            user,
+            otp
+        )
+
+        return Response(
+            {
+                "message": "A new verification code has been sent to your email.",
+                "email": user.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class LoginView(APIView):
+    def post(self,request):
+        serializer = LoginSerializer(data = request.data)
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+        user = serializer.validated_data["user"]
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                "message": "Login successful.",
+
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                },
+
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                }
+            },
+
+            status=status.HTTP_200_OK,
+        )
+        
