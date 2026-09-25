@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'clothings',
+    'outfits',
     "rest_framework",
 ]
 
@@ -129,3 +131,16 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
