@@ -1,3 +1,5 @@
+from clothings.models import ClothingItem
+
 COLOR_COMPATIBILITY = {
     "black": {
         "white": 100,
@@ -268,5 +270,64 @@ def calculate_outfit_score(top, bottom, shoes):
     }
 
 
+
+def calculate_item_score(selected_item, recommended_item):
+    color_score = get_color_score(
+        selected_item.color,
+        recommended_item.color,
+    )
+
+    style_score = get_style_score(
+        selected_item.style,
+        recommended_item.style
+    )
+
+    occasion_score = get_occasion_score(
+        selected_item.occasion,
+        recommended_item.occasion
+    )
+
+    overall_score = (
+        color_score * 0.40
+        + style_score * 0.30
+        + occasion_score * 0.30
+    )
+
+    return {
+        "color_match": round(color_score),
+        "style_match": round(style_score),
+        "occasion_match": round(occasion_score),
+        "overall_match": round(overall_score),
+    }
+
+
+def recommend_items(selected_item, recommended_category):
+    
+    items = ClothingItem.objects.filter(
+        category=recommended_category,
+        is_active=True
+    ).exclude(
+        id=selected_item.id
+    )
+
+    recommendations = []
+
+    for item in items:
+        score = calculate_item_score(
+            selected_item,
+            item
+        )
+
+        recommendations.append({
+            "item": item,
+            "score": score
+        })
+
+    recommendations.sort(
+        key=lambda recommendation: recommendation["score"]["overall_match"],
+        reverse=True
+    )
+
+    return recommendations
 
 
