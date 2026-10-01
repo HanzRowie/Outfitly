@@ -3,98 +3,135 @@ from clothings.models import ClothingItem
 COLOR_COMPATIBILITY = {
     "black": {
         "white": 100,
+        "gray": 95,
         "beige": 95,
-        "grey": 95,
         "navy": 90,
-        "olive": 90,
         "blue": 90,
+        "olive": 90,
         "brown": 85,
+        "yellow": 75,
         "black": 85,
     },
 
     "white": {
         "black": 100,
         "navy": 100,
+        "gray": 95,
         "beige": 95,
-        "grey": 95,
-        "olive": 90,
         "blue": 90,
+        "olive": 90,
         "brown": 85,
+        "yellow": 85,
         "white": 80,
     },
 
-    "navy": {
-        "white": 100,
-        "beige": 95,
-        "grey": 95,
+    "gray": {
+        "black": 95,
+        "white": 95,
+        "navy": 95,
+        "blue": 90,
+        "beige": 90,
+        "olive": 90,
+        "brown": 85,
+        "yellow": 75,
+        "gray": 90,
+    },
+
+    "blue": {
         "black": 90,
-        "brown": 90,
-        "olive": 85,
-        "blue": 80,
+        "white": 90,
+        "gray": 90,
+        "beige": 90,
+        "navy": 80,
+        "brown": 85,
+        "olive": 80,
+        "yellow": 70,
+        "blue": 85,
     },
 
     "beige": {
         "black": 95,
         "white": 95,
         "navy": 95,
+        "gray": 90,
+        "blue": 90,
         "brown": 90,
         "olive": 90,
-        "blue": 90,
-        "grey": 85,
+        "yellow": 75,
+        "beige": 90,
     },
 
-    "grey": {
-        "black": 95,
-        "white": 95,
-        "navy": 95,
-        "blue": 90,
-        "olive": 90,
-        "beige": 85,
-        "brown": 85,
+    "navy": {
+        "white": 100,
+        "beige": 95,
+        "gray": 95,
+        "black": 90,
+        "blue": 80,
+        "brown": 90,
+        "olive": 85,
+        "yellow": 75,
+        "navy": 85,
     },
 
     "olive": {
         "black": 90,
         "white": 90,
         "beige": 90,
+        "gray": 90,
         "navy": 85,
-        "grey": 90,
-        "brown": 85,
         "blue": 80,
-    },
-
-    "blue": {
-        "white": 90,
-        "beige": 90,
-        "black": 90,
-        "grey": 90,
-        "navy": 80,
         "brown": 85,
-        "olive": 80,
+        "yellow": 75,
+        "olive": 85,
     },
 
     "brown": {
         "white": 85,
         "beige": 90,
         "navy": 90,
+        "gray": 85,
         "black": 85,
-        "grey": 85,
-        "olive": 85,
         "blue": 85,
+        "olive": 85,
+        "yellow": 70,
+        "brown": 85,
+    },
+
+    "yellow": {
+        "black": 75,
+        "white": 85,
+        "gray": 75,
+        "blue": 70,
+        "beige": 75,
+        "navy": 75,
+        "olive": 75,
+        "brown": 70,
+        "yellow": 70,
     },
 }
 
 STYLE_COMPATIBILITY = {
     "casual": {
         "casual": 100,
+        "minimal": 95,
         "streetwear": 95,
         "sporty": 90,
         "business": 70,
         "formal": 60,
     },
 
+    "minimal": {
+        "casual": 95,
+        "minimal": 100,
+        "streetwear": 90,
+        "sporty": 80,
+        "business": 85,
+        "formal": 80,
+    },
+
     "streetwear": {
         "casual": 95,
+        "minimal": 90,
         "streetwear": 100,
         "sporty": 90,
         "business": 50,
@@ -103,6 +140,7 @@ STYLE_COMPATIBILITY = {
 
     "sporty": {
         "casual": 90,
+        "minimal": 80,
         "streetwear": 90,
         "sporty": 100,
         "business": 40,
@@ -111,6 +149,7 @@ STYLE_COMPATIBILITY = {
 
     "business": {
         "casual": 70,
+        "minimal": 85,
         "streetwear": 50,
         "sporty": 40,
         "business": 100,
@@ -119,6 +158,7 @@ STYLE_COMPATIBILITY = {
 
     "formal": {
         "casual": 60,
+        "minimal": 80,
         "streetwear": 50,
         "sporty": 40,
         "business": 95,
@@ -329,5 +369,4 @@ def recommend_items(selected_item, recommended_category):
     )
 
     return recommendations
-
 
