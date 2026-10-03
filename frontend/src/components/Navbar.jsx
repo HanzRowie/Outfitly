@@ -1,11 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getUserProfile, getImageUrl } from '../services/api';
 
 export const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
   const navigate = useNavigate();
+
+  // Load user profile picture if authenticated & listen for profile updates
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProfilePicture(null);
+      return;
+    }
+
+    let isCurrent = true;
+    getUserProfile()
+      .then((data) => {
+        if (isCurrent && data?.profile_picture) {
+          setProfilePicture(data.profile_picture);
+        }
+      })
+      .catch(() => {});
+
+    const handleProfileUpdate = (e) => {
+      if (e.detail?.profile_picture) {
+        setProfilePicture(e.detail.profile_picture);
+      }
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    return () => {
+      isCurrent = false;
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -73,12 +105,36 @@ export const Navbar = () => {
         <div className="outfitly-nav__right">
           {isAuthenticated ? (
             <div className="outfitly-nav__user-menu">
-              <div className="outfitly-user-badge" title={`Signed in as ${user?.username || 'User'}`}>
+              <Link
+                to="/profile"
+                className="outfitly-user-badge outfitly-user-badge--link"
+                title={`Signed in as @${user?.username || 'User'}. Click to view profile.`}
+                aria-label="View user profile"
+              >
                 <span className="outfitly-user-avatar">
-                  {getInitials(user?.username)}
+                  {profilePicture ? (
+                    <img
+                      src={getImageUrl(profilePicture)}
+                      alt={user?.username || 'User'}
+                      className="outfitly-user-avatar__img"
+                    />
+                  ) : (
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  )}
                 </span>
                 <span className="outfitly-user-name">@{user?.username || 'user'}</span>
-              </div>
+              </Link>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -164,16 +220,53 @@ export const Navbar = () => {
             >
               Saved Outfits
             </NavLink>
+            {isAuthenticated && (
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `outfitly-nav__mobile-link ${isActive ? 'outfitly-nav__mobile-link--active' : ''}`
+                }
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                My Profile
+              </NavLink>
+            )}
 
           </nav>
 
           <div className="outfitly-nav__mobile-footer">
             {isAuthenticated ? (
               <div className="outfitly-nav__mobile-user-row">
-                <div className="outfitly-user-badge">
-                  <span className="outfitly-user-avatar">{getInitials(user?.username)}</span>
+                <Link
+                  to="/profile"
+                  className="outfitly-user-badge outfitly-user-badge--link"
+                  onClick={() => setMobileMenuOpen(false)}
+                  title="View user profile"
+                >
+                  <span className="outfitly-user-avatar">
+                    {profilePicture ? (
+                      <img
+                        src={getImageUrl(profilePicture)}
+                        alt={user?.username || 'User'}
+                        className="outfitly-user-avatar__img"
+                      />
+                    ) : (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        aria-hidden="true"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    )}
+                  </span>
                   <span className="outfitly-user-name">@{user?.username}</span>
-                </div>
+                </Link>
                 <button
                   type="button"
                   onClick={() => {
