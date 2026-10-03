@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   getClothingItems,
   saveOutfit,
+  updateOutfit,
+  getOutfit,
   getRecommendations,
   getOutfitScore,
   getImageUrl,
@@ -15,14 +17,18 @@ import { useAuth } from '../context/AuthContext';
 export const OutfitBuilder = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
+
+  const editOutfitId = searchParams.get('edit');
+  const isEditing = Boolean(editOutfitId);
 
   const initialCategory = searchParams.get('category') || 'all';
 
-  // Selected Outfit Slots (top, bottom, shoes)
-  const [selectedTop, setSelectedTop] = useState(null);
-  const [selectedBottom, setSelectedBottom] = useState(null);
-  const [selectedShoes, setSelectedShoes] = useState(null);
+  // Selected Outfit Slots (top, bottom, shoes) - preloaded from navigation state if available
+  const [selectedTop, setSelectedTop] = useState(location.state?.initialTop || null);
+  const [selectedBottom, setSelectedBottom] = useState(location.state?.initialBottom || null);
+  const [selectedShoes, setSelectedShoes] = useState(location.state?.initialShoes || null);
 
   // Clothing catalogue state
   const [activeCategory, setActiveCategory] = useState(initialCategory);
@@ -72,10 +78,57 @@ export const OutfitBuilder = () => {
     fetchItems(cat);
   }, [searchParams]);
 
-  // Handle switching category tab
+  // Preload outfit items if accessed directly via URL in edit mode without state
+  useEffect(() => {
+    if (!isEditing) return;
+    if (selectedTop && selectedBottom && selectedShoes) return;
+
+    let isMounted = true;
+    async function loadOutfitForEdit() {
+      try {
+        const [outfitData, allClothing] = await Promise.all([
+          getOutfit(editOutfitId),
+          clothingItems.length > 0 ? Promise.resolve(clothingItems) : getClothingItems(),
+        ]);
+        if (!isMounted || !outfitData) return;
+
+        const topId = typeof outfitData.top === 'object' ? outfitData.top.id : outfitData.top;
+        const bottomId = typeof outfitData.bottom === 'object' ? outfitData.bottom.id : outfitData.bottom;
+        const shoesId = typeof outfitData.shoes === 'object' ? outfitData.shoes.id : outfitData.shoes;
+
+        const foundTop = allClothing.find((item) => item.id === topId);
+        const foundBottom = allClothing.find((item) => item.id === bottomId);
+        const foundShoes = allClothing.find((item) => item.id === shoesId);
+
+        if (foundTop && !selectedTop) setSelectedTop(foundTop);
+        if (foundBottom && !selectedBottom) setSelectedBottom(foundBottom);
+        if (foundShoes && !selectedShoes) setSelectedShoes(foundShoes);
+      } catch (err) {
+        console.error('Failed to preload outfit for editing:', err);
+        if (isMounted) {
+          setSaveError(`Unable to load outfit #${editOutfitId} details.`);
+        }
+      }
+    }
+
+    loadOutfitForEdit();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [editOutfitId, isEditing]);
+
+  // Handle switching category tab (preserve edit param if active)
   const handleCategoryChange = (cat) => {
     setActiveCategory(cat);
-    setSearchParams(cat === 'all' ? {} : { category: cat });
+    const newParams = {};
+    if (editOutfitId) {
+      newParams.edit = editOutfitId;
+    }
+    if (cat !== 'all') {
+      newParams.category = cat;
+    }
+    setSearchParams(newParams);
   };
 
   // Toggle item selection
@@ -244,7 +297,7 @@ export const OutfitBuilder = () => {
     };
   }, [selectedTop?.id, selectedBottom?.id, selectedShoes?.id]);
 
-  // Handle Save Outfit (POST /api/outfits/)
+  // Handle Save Outfit (POST /api/outfits/) or Update Outfit (PATCH /api/outfits/<id>/)
   const handleSaveOutfit = async () => {
     setSaveSuccess('');
     setSaveError('');
@@ -258,18 +311,37 @@ export const OutfitBuilder = () => {
 
     setIsSaving(true);
     try {
-      await saveOutfit({
-        top: selectedTop.id,
-        bottom: selectedBottom.id,
-        shoes: selectedShoes.id,
-      });
+      if (isEditing) {
+        // Send PATCH /api/outfits/<outfit_id>/
+        await updateOutfit(editOutfitId, {
+          top: selectedTop.id,
+          bottom: selectedBottom.id,
+          shoes: selectedShoes.id,
+        });
 
-      setIsSaved(true);
-      setSaveSuccess('Outfit saved successfully to your wardrobe!');
+        setIsSaved(true);
+        setSaveSuccess('Outfit changes saved successfully! Returning to saved outfits...');
 
-      setTimeout(() => {
-        setIsSaved(false);
-      }, 2500);
+        setTimeout(() => {
+          navigate('/saved-outfits', {
+            state: { message: `Outfit #${editOutfitId} updated successfully!` },
+          });
+        }, 800);
+      } else {
+        // Normal create: POST /api/outfits/
+        await saveOutfit({
+          top: selectedTop.id,
+          bottom: selectedBottom.id,
+          shoes: selectedShoes.id,
+        });
+
+        setIsSaved(true);
+        setSaveSuccess('Outfit saved successfully to your wardrobe!');
+
+        setTimeout(() => {
+          setIsSaved(false);
+        }, 2500);
+      }
     } catch (err) {
       console.error('Save outfit error:', err);
 
@@ -297,22 +369,38 @@ export const OutfitBuilder = () => {
         {/* Header Breadcrumb & Title */}
         <div className="outfitly-builder-header">
           <div>
-            <span className="outfitly-section-kicker">STUDIO WORKSPACE</span>
-            <h1 className="outfitly-builder-title">Outfit Builder</h1>
+            <span className="outfitly-section-kicker">
+              {isEditing ? 'EDITING SAVED OUTFIT' : 'STUDIO WORKSPACE'}
+            </span>
+            <h1 className="outfitly-builder-title">
+              {isEditing ? `Edit Outfit #${editOutfitId}` : 'Outfit Builder'}
+            </h1>
             <p className="outfitly-builder-subtitle">
-              Assemble your look by curating a top, bottom, and footwear from your collection.
+              {isEditing
+                ? 'Replace any garment below with an alternative item and save your changes.'
+                : 'Assemble your look by curating a top, bottom, and footwear from your collection.'}
             </p>
           </div>
 
           <div className="outfitly-builder-header-actions">
-            {selectedCount > 0 && (
+            {isEditing ? (
               <button
                 type="button"
-                onClick={handleClearOutfit}
+                onClick={() => navigate('/saved-outfits')}
                 className="outfitly-btn outfitly-btn--outline outfitly-btn--small"
               >
-                Reset Outfit
+                ← Cancel & Return
               </button>
+            ) : (
+              selectedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearOutfit}
+                  className="outfitly-btn outfitly-btn--outline outfitly-btn--small"
+                >
+                  Reset Outfit
+                </button>
+              )
             )}
           </div>
         </div>
@@ -736,16 +824,35 @@ export const OutfitBuilder = () => {
                 onClick={handleSaveOutfit}
                 className={isSaved ? 'outfitly-btn--saved' : ''}
               >
-                {isSaved ? 'Saved ✓' : isSaving ? 'Saving...' : 'Save Outfit'}
+                {isSaved
+                  ? isEditing
+                    ? 'Changes Saved ✓'
+                    : 'Saved ✓'
+                  : isSaving
+                  ? isEditing
+                    ? 'Saving Changes...'
+                    : 'Saving...'
+                  : isEditing
+                  ? 'Save Changes'
+                  : 'Save Outfit'}
               </Button>
 
-              <button
-                type="button"
-                onClick={() => setRandomNotice(true)}
-                className="outfitly-btn outfitly-btn--outline outfitly-btn--full"
-              >
-                Generate Random Outfit
-              </button>
+              {isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/saved-outfits')}
+                  className="outfitly-btn outfitly-btn--outline outfitly-btn--full"
+                >
+                  Discard & Back to Saved Outfits
+                </button>
+              ) : (
+                <Link
+                  to="/random-outfit"
+                  className="outfitly-btn outfitly-btn--outline outfitly-btn--full"
+                >
+                  Random Outfit Generator →
+                </Link>
+              )}
             </div>
           </aside>
 

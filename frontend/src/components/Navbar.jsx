@@ -51,6 +51,14 @@ export const Navbar = () => {
             Build Outfit
           </NavLink>
           <NavLink
+            to="/random-outfit"
+            className={({ isActive }) =>
+              `outfitly-nav__link ${isActive ? 'outfitly-nav__link--active' : ''}`
+            }
+          >
+            Random Outfit
+          </NavLink>
+          <NavLink
             to="/saved-outfits"
             className={({ isActive }) =>
               `outfitly-nav__link ${isActive ? 'outfitly-nav__link--active' : ''}`
@@ -58,6 +66,7 @@ export const Navbar = () => {
           >
             Saved Outfits
           </NavLink>
+
         </nav>
 
         {/* Right Section / User Menu */}
@@ -138,6 +147,15 @@ export const Navbar = () => {
               Build Outfit
             </NavLink>
             <NavLink
+              to="/random-outfit"
+              className={({ isActive }) =>
+                `outfitly-nav__mobile-link ${isActive ? 'outfitly-nav__mobile-link--active' : ''}`
+              }
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Random Outfit
+            </NavLink>
+            <NavLink
               to="/saved-outfits"
               className={({ isActive }) =>
                 `outfitly-nav__mobile-link ${isActive ? 'outfitly-nav__mobile-link--active' : ''}`
@@ -146,6 +164,7 @@ export const Navbar = () => {
             >
               Saved Outfits
             </NavLink>
+
           </nav>
 
           <div className="outfitly-nav__mobile-footer">

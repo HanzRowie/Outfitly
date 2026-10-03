@@ -244,13 +244,12 @@ export const Home = () => {
               <p className="outfitly-action-card__description">
                 Let Outfitly create a random combination from your wardrobe.
               </p>
-              <button
-                type="button"
-                onClick={() => navigate('/outfit-builder?action=random')}
+              <Link
+                to="/random-outfit"
                 className="outfitly-btn outfitly-btn--outline outfitly-btn--full"
               >
                 Generate Outfit
-              </button>
+              </Link>
             </div>
 
             {/* Card 3: Saved Outfits */}
