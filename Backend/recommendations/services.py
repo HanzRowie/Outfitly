@@ -370,3 +370,79 @@ def recommend_items(selected_item, recommended_category):
 
     return recommendations
 
+def recommend_complete_outfits(selected_item, limit=5):
+    items = ClothingItem.objects.filter(
+        is_active=True
+    ).exclude(
+        id=selected_item.id
+    )
+
+    if selected_item.category == "top":
+        tops = [selected_item]
+        bottoms = items.filter(category="bottom")
+        shoes = items.filter(category="shoes")
+
+    elif selected_item.category == "bottom":
+        tops = items.filter(category="top")
+        bottoms = [selected_item]
+        shoes = items.filter(category="shoes")
+
+    elif selected_item.category == "shoes":
+        tops = items.filter(category="top")
+        bottoms = items.filter(category="bottom")
+        shoes = [selected_item]
+
+    else:
+        return []
+
+    recommendations = []
+
+    for top in tops:
+        for bottom in bottoms:
+            for shoe in shoes:
+
+                # Check if the combination makes basic sense
+                if not is_valid_outfit(top, bottom, shoe):
+                    continue
+
+                # Calculate the complete outfit score
+                score = calculate_outfit_score(
+                    top,
+                    bottom,
+                    shoe
+                )
+
+                # Ignore very low-scoring outfits
+                if score["overall_match"] < 60:
+                    continue
+
+                recommendations.append({
+                    "top": top,
+                    "bottom": bottom,
+                    "shoes": shoe,
+                    "score": score
+                })
+
+    recommendations.sort(
+        key=lambda recommendation: recommendation["score"]["overall_match"],
+        reverse=True
+    )
+
+    return recommendations[:limit]
+
+def is_valid_outfit(top, bottom, shoes):
+   
+
+    # Occasion compatibility
+    occasions = {
+        top.occasion.lower(),
+        bottom.occasion.lower(),
+        shoes.occasion.lower()
+    }
+
+    # If all three have completely different occasions,
+    # the outfit is probably not coherent.
+    if len(occasions) == 3:
+        return False
+
+    return True
