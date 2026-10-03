@@ -1,50 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { getSavedOutfits, getClothingItems, getImageUrl } from '../services/api';
 
 export const SavedOutfits = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [savedOutfits, setSavedOutfits] = useState([]);
   const [clothingMap, setClothingMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+
+  // Dismiss flash message after a delay if set
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+  }, [location.state]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      const [outfitsData, clothingData] = await Promise.all([
+        getSavedOutfits(),
+        getClothingItems(),
+      ]);
+
+      // Build lookup map for clothing items by ID
+      const map = {};
+      (clothingData || []).forEach((item) => {
+        map[item.id] = item;
+      });
+
+      setClothingMap(map);
+      setSavedOutfits(outfitsData || []);
+    } catch (err) {
+      console.error('Failed to load saved outfits:', err);
+      setErrorMessage('Unable to load saved outfits.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadData() {
-      setIsLoading(true);
-      setErrorMessage('');
-      try {
-        const [outfitsData, clothingData] = await Promise.all([
-          getSavedOutfits(),
-          getClothingItems(),
-        ]);
-
-        if (!isMounted) return;
-
-        // Build lookup map for clothing items by ID
-        const map = {};
-        (clothingData || []).forEach((item) => {
-          map[item.id] = item;
-        });
-
-        setClothingMap(map);
-        setSavedOutfits(outfitsData || []);
-      } catch (err) {
-        console.error('Failed to load saved outfits:', err);
-        if (isMounted) setErrorMessage('Unable to load saved outfits.');
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
     loadData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  }, [location.key]);
+
+  // Navigate to Outfit Builder in edit mode with current outfit and resolved items
+  const handleEditOutfit = (outfit, topItem, bottomItem, shoesItem) => {
+    navigate(`/outfit-builder?edit=${outfit.id}`, {
+      state: {
+        editOutfit: outfit,
+        initialTop: topItem,
+        initialBottom: bottomItem,
+        initialShoes: shoesItem,
+      },
+    });
+  };
 
   return (
     <div className="outfitly-app-shell">
@@ -64,6 +80,29 @@ export const SavedOutfits = () => {
             + Build New Outfit
           </Link>
         </div>
+
+        {/* Success Feedback Alert */}
+        {successMessage && (
+          <div className="outfitly-alert outfitly-alert--success" role="status">
+            <svg className="outfitly-alert__icon" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{successMessage}</span>
+              <button
+                type="button"
+                className="outfitly-btn-link"
+                onClick={() => setSuccessMessage('')}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -170,6 +209,30 @@ export const SavedOutfits = () => {
                       </div>
                       <span className="outfitly-saved-item__name">{shoesItem?.name || `Item #${outfit.shoes}`}</span>
                     </div>
+                  </div>
+
+                  {/* Card Actions: Edit Outfit */}
+                  <div className="outfitly-saved-card__actions">
+                    <button
+                      type="button"
+                      onClick={() => handleEditOutfit(outfit, topItem, bottomItem, shoesItem)}
+                      className="outfitly-btn outfitly-btn--outline outfitly-btn--small outfitly-btn--full"
+                      aria-label={`Edit Outfit #${outfit.id}`}
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        style={{ marginRight: '0.4rem' }}
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      Edit Outfit
+                    </button>
                   </div>
                 </div>
               );
