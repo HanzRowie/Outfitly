@@ -1,6 +1,6 @@
 from django.urls import path
 
-from accounts.views import RegisterView, VerifyOTPView, ResendOTPView, LoginView
+from accounts.views import RegisterView, VerifyOTPView, ResendOTPView, LoginView, ProfileView
 
 urlpatterns = [
      path(
@@ -24,4 +24,5 @@ urlpatterns = [
         LoginView.as_view(),
         name="login"
     ),
+    path("profile/", ProfileView.as_view(), name="profile"),
 ]

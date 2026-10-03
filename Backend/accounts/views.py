@@ -3,16 +3,16 @@ import random
 from datetime import timedelta
 from django.core.mail import send_mail
 from django.utils import timezone
-
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .utils import send_otp_email
-from accounts.models import OTPVerification, User
+from accounts.models import OTPVerification, User, Profile
 
-from accounts.serializers import OTPVerificationSerializer, RegisterSerializer, ResendOTPSerializer, LoginSerializer
+from accounts.serializers import OTPVerificationSerializer, RegisterSerializer, ResendOTPSerializer, LoginSerializer, ProfileSerializer
 
 class RegisterView(APIView):
     def post(self,request):
@@ -217,4 +217,30 @@ class LoginView(APIView):
 
             status=status.HTTP_200_OK,
         )
-        
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+
+        serializer = ProfileSerializer(
+            profile,
+            context={"request": request}
+        )
+
+        return Response(serializer.data)
+
+    def patch(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+
+        serializer = ProfileSerializer(
+            profile,
+            data=request.data,
+            partial=True,
+            context={"request": request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
