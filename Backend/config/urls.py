@@ -12,7 +12,11 @@ urlpatterns = [
     path("api/clothing/", include("clothings.urls")),
     path("api/outfits/",include("outfits.urls")),
     path("api/recommendations/", include("recommendations.urls")),
+    path("api/generator/", include("generator.urls")),
     re_path(r'^clothing/(?P<path>.*)$', serve, {'document_root': BASE_DIR / 'clothing'}),
     re_path(r'^media/clothing/(?P<path>.*)$', serve, {'document_root': BASE_DIR / 'clothing'}),
+    re_path(r'^profiles/(?P<path>.*)$', serve, {'document_root': BASE_DIR / 'profiles'}),
+    re_path(r'^media/profiles/(?P<path>.*)$', serve, {'document_root': BASE_DIR / 'profiles'}),
+    path("api/friends/", include("friends.urls")),
 ]
 
