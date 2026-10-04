@@ -2,12 +2,15 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from outfits.models import Outfit
 from outfits.serializers import OutfitSerializer
 
 # Create your views here.
 
 class OutfitListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self,request):
 
         outfits = Outfit.objects.filter(user=request.user)
@@ -40,6 +43,8 @@ class OutfitListCreateView(APIView):
 
 
 class OutfitDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get_object(self,pk):
         try:
             return Outfit.objects.get(
