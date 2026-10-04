@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'clothings',
     'outfits',
     "recommendations",
+    "generator",
+    "friends",
     "rest_framework",
 ]
 
