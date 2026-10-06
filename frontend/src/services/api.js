@@ -75,8 +75,10 @@ async function request(endpoint, options = {}) {
   const shouldAttachAuth = options.requiresAuth !== false;
   const token = shouldAttachAuth ? (options.token || getAccessToken()) : null;
 
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
@@ -220,6 +222,31 @@ export async function getSavedOutfits() {
 }
 
 /**
+ * Fetch a single saved outfit by ID.
+ * Endpoint: GET /api/outfits/<outfit_id>/
+ */
+export async function getOutfit(outfitId) {
+  return request(`/api/outfits/${outfitId}/`, { method: 'GET' });
+}
+
+/**
+ * Update an existing saved outfit.
+ * Endpoint: PATCH /api/outfits/<outfit_id>/
+ * Body: { top: topId, bottom: bottomId, shoes: shoesId }
+ */
+export async function updateOutfit(outfitId, { top, bottom, shoes }) {
+  return request(`/api/outfits/${outfitId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      top,
+      bottom,
+      shoes,
+    }),
+  });
+}
+
+
+/**
  * Calculate the exact rule-based score for an assembled outfit (top + bottom + shoes).
  * Endpoint: POST /api/recommendations/score/
  * Body: { top: topId, bottom: bottomId, shoes: shoesId }
@@ -253,5 +280,111 @@ export async function getRecommendations(itemId, targetCategory = null) {
   });
 }
 
+/**
+ * Generate a randomized curated outfit with rule-based match scores.
+ * Endpoint: GET /api/generator/random/
+ */
+export async function getRandomOutfit() {
+  return request('/api/generator/random/', {
+    method: 'GET',
+    requiresAuth: false,
+  });
+}
+
+/**
+ * Fetch authenticated user's profile.
+ * Endpoint: GET /api/accounts/profile/
+ */
+export async function getUserProfile() {
+  return request('/api/accounts/profile/', {
+    method: 'GET',
+  });
+}
+
+/**
+ * Update authenticated user's profile.
+ * Endpoint: PATCH /api/accounts/profile/
+ * Accepts either a plain object (JSON) for text updates or FormData for multipart/form-data with profile picture.
+ */
+export async function updateUserProfile(data) {
+  const isFormData = data instanceof FormData;
+  return request('/api/accounts/profile/', {
+    method: 'PATCH',
+    body: isFormData ? data : JSON.stringify(data),
+  });
+}
+
+/**
+ * Fetch list of other users available to add as friends.
+ * Endpoint: GET /api/friends/users/
+ */
+export async function getFriendUsers() {
+  return request('/api/friends/users/', { method: 'GET' });
+}
+
+/**
+ * Send a friend request to a user.
+ * Endpoint: POST /api/friends/requests/send/
+ * Body: { receiver: userId }
+ */
+export async function sendFriendRequest(receiverId) {
+  return request('/api/friends/requests/send/', {
+    method: 'POST',
+    body: JSON.stringify({ receiver: receiverId }),
+  });
+}
+
+/**
+ * Fetch incoming and outgoing friend requests.
+ * Endpoint: GET /api/friends/requests/
+ */
+export async function getFriendRequests() {
+  return request('/api/friends/requests/', { method: 'GET' });
+}
+
+/**
+ * Respond to an incoming friend request (accept or reject).
+ * Endpoint: PATCH /api/friends/requests/<id>/
+ * Body: { action: 'accept' | 'reject' }
+ */
+export async function respondFriendRequest(requestId, action) {
+  return request(`/api/friends/requests/${requestId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action }),
+  });
+}
+
+/**
+ * Fetch all conversations for the authenticated user.
+ * Endpoint: GET /api/chat/conversations/
+ */
+export async function getConversations() {
+  return request('/api/chat/conversations/', { method: 'GET' });
+}
+
+/**
+ * Get or create a conversation with a friend.
+ * Endpoint: POST /api/chat/conversations/
+ * Body: { friend_id: number }
+ */
+export async function createOrGetConversation(friendId) {
+  return request('/api/chat/conversations/', {
+    method: 'POST',
+    body: JSON.stringify({ friend_id: friendId }),
+  });
+}
+
+/**
+ * Fetch messages for a specific conversation.
+ * Endpoint: GET /api/chat/conversations/<id>/messages/
+ */
+export async function getConversationMessages(conversationId) {
+  return request(`/api/chat/conversations/${conversationId}/messages/`, {
+    method: 'GET',
+  });
+}
+
 export { API_BASE_URL };
+
+
 
