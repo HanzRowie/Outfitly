@@ -493,7 +493,9 @@ export const Friends = () => {
                           <h3 className="outfitly-friend-card__name">
                             {fullName || `@${user.username}`}
                           </h3>
-                          <span className="outfitly-friend-card__handle">@{user.username}</span>
+                          {fullName && (
+                            <span className="outfitly-friend-card__handle">@{user.username}</span>
+                          )}
                         </div>
                       </div>
 
@@ -627,7 +629,9 @@ export const Friends = () => {
                             <h4 className="outfitly-request-card__name">
                               {fullName || `@${req.sender_username}`}
                             </h4>
-                            <span className="outfitly-request-card__handle">@{req.sender_username}</span>
+                            {fullName && (
+                              <span className="outfitly-request-card__handle">@{req.sender_username}</span>
+                            )}
                             {sender?.bio && (
                               <p className="outfitly-request-card__bio">{sender.bio}</p>
                             )}
@@ -724,8 +728,10 @@ export const Friends = () => {
                           <h3 className="outfitly-friend-card__name">
                             {fullName || `@${friend.username}`}
                           </h3>
-                          <span className="outfitly-friend-card__handle">@{friend.username}</span>
-                          <span className="outfitly-pill outfitly-pill--compact" style={{ marginTop: '0.25rem' }}>
+                          {fullName && (
+                            <span className="outfitly-friend-card__handle">@{friend.username}</span>
+                          )}
+                          <span className="outfitly-pill outfitly-pill--compact" style={{ marginTop: '0.35rem', alignSelf: 'flex-start' }}>
                             ✓ Connected Stylist
                           </span>
                         </div>
@@ -766,6 +772,7 @@ export const Friends = () => {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 aria-hidden="true"
+                                style={{ marginRight: '0.45rem', flexShrink: 0 }}
                               >
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                               </svg>
