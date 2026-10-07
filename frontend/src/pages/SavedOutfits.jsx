@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getSavedOutfits, getClothingItems, getImageUrl } from '../services/api';
+import { getSavedOutfits, getClothingItems, getImageUrl, deleteOutfit } from '../services/api';
 
 export const SavedOutfits = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ export const SavedOutfits = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+  const [deletingId, setDeletingId] = useState(null);
 
   // Dismiss flash message after a delay if set
   useEffect(() => {
@@ -60,6 +61,30 @@ export const SavedOutfits = () => {
         initialShoes: shoesItem,
       },
     });
+  };
+
+  // Delete saved outfit
+  const handleDeleteOutfit = async (outfitId) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete Look N° ${String(outfitId).padStart(2, '0')} from your archive?`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(outfitId);
+    setErrorMessage('');
+    try {
+      await deleteOutfit(outfitId);
+      setSavedOutfits((prev) => prev.filter((o) => o.id !== outfitId));
+      setSuccessMessage(`Look N° ${String(outfitId).padStart(2, '0')} deleted successfully.`);
+    } catch (err) {
+      console.error('Failed to delete outfit:', err);
+      setErrorMessage(err.message || 'Unable to delete outfit. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -148,93 +173,159 @@ export const SavedOutfits = () => {
               const topItem = typeof outfit.top === 'object' ? outfit.top : clothingMap[outfit.top];
               const bottomItem = typeof outfit.bottom === 'object' ? outfit.bottom : clothingMap[outfit.bottom];
               const shoesItem = typeof outfit.shoes === 'object' ? outfit.shoes : clothingMap[outfit.shoes];
-              const createdDate = outfit.created_at ? new Date(outfit.created_at).toLocaleDateString() : '';
+              const createdDate = outfit.created_at
+                ? new Date(outfit.created_at).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : '';
 
               return (
-                <div key={outfit.id} className="outfitly-saved-card">
+                <article key={outfit.id} className="outfitly-saved-card">
+                  {/* Editorial Card Header */}
                   <div className="outfitly-saved-card__header">
-                    <span className="outfitly-saved-card__id">Outfit #{outfit.id}</span>
-                    {createdDate && <span className="outfitly-saved-card__date">{createdDate}</span>}
+                    <div className="outfitly-saved-card__id-group">
+                      <span className="outfitly-saved-card__edition">LOOKBOOK ENTRY</span>
+                      <h3 className="outfitly-saved-card__id">LOOK N° {String(outfit.id).padStart(2, '0')}</h3>
+                    </div>
+                    {createdDate && (
+                      <span className="outfitly-saved-card__date">{createdDate}</span>
+                    )}
                   </div>
 
-                  {/* 3 Garment Items Row */}
-                  <div className="outfitly-saved-card__garments">
-                    {/* Top */}
-                    <div className="outfitly-saved-item">
-                      <span className="outfitly-saved-item__badge">TOP</span>
-                      <div className="outfitly-saved-item__img-wrap">
-                        {topItem?.image ? (
-                          <img
-                            src={getImageUrl(topItem.image)}
-                            alt={topItem.name}
-                            className="outfitly-saved-item__image"
-                          />
-                        ) : (
-                          <div className="outfitly-saved-item__fallback">Top</div>
-                        )}
+                  {/* 3-Piece Curated Triptych (TOP + BOTTOM + SHOES) */}
+                  <div className="outfitly-saved-card__triptych">
+                    {/* Item 1: TOP */}
+                    <div className="outfitly-saved-slot">
+                      <div className="outfitly-saved-slot__frame">
+                        <span className="outfitly-saved-slot__tag">01 / TOP</span>
+                        <div className="outfitly-saved-slot__img-wrap">
+                          {topItem?.image ? (
+                            <img
+                              src={getImageUrl(topItem.image)}
+                              alt={topItem.name}
+                              className="outfitly-saved-slot__img"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="outfitly-saved-slot__fallback">Top Item</div>
+                          )}
+                        </div>
                       </div>
-                      <span className="outfitly-saved-item__name">{topItem?.name || `Item #${outfit.top}`}</span>
+                      <div className="outfitly-saved-slot__meta">
+                        <h4 className="outfitly-saved-slot__name">{topItem?.name || `Top #${outfit.top}`}</h4>
+                        <p className="outfitly-saved-slot__details">
+                          {topItem ? `${topItem.color} • ${topItem.style}` : 'Curated Garment'}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Bottom */}
-                    <div className="outfitly-saved-item">
-                      <span className="outfitly-saved-item__badge">BOTTOM</span>
-                      <div className="outfitly-saved-item__img-wrap">
-                        {bottomItem?.image ? (
-                          <img
-                            src={getImageUrl(bottomItem.image)}
-                            alt={bottomItem.name}
-                            className="outfitly-saved-item__image"
-                          />
-                        ) : (
-                          <div className="outfitly-saved-item__fallback">Bottom</div>
-                        )}
+                    {/* Item 2: BOTTOM */}
+                    <div className="outfitly-saved-slot">
+                      <div className="outfitly-saved-slot__frame">
+                        <span className="outfitly-saved-slot__tag">02 / BOTTOM</span>
+                        <div className="outfitly-saved-slot__img-wrap">
+                          {bottomItem?.image ? (
+                            <img
+                              src={getImageUrl(bottomItem.image)}
+                              alt={bottomItem.name}
+                              className="outfitly-saved-slot__img"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="outfitly-saved-slot__fallback">Bottom Item</div>
+                          )}
+                        </div>
                       </div>
-                      <span className="outfitly-saved-item__name">{bottomItem?.name || `Item #${outfit.bottom}`}</span>
+                      <div className="outfitly-saved-slot__meta">
+                        <h4 className="outfitly-saved-slot__name">{bottomItem?.name || `Bottom #${outfit.bottom}`}</h4>
+                        <p className="outfitly-saved-slot__details">
+                          {bottomItem ? `${bottomItem.color} • ${bottomItem.style}` : 'Curated Garment'}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Shoes */}
-                    <div className="outfitly-saved-item">
-                      <span className="outfitly-saved-item__badge">SHOES</span>
-                      <div className="outfitly-saved-item__img-wrap">
-                        {shoesItem?.image ? (
-                          <img
-                            src={getImageUrl(shoesItem.image)}
-                            alt={shoesItem.name}
-                            className="outfitly-saved-item__image"
-                          />
-                        ) : (
-                          <div className="outfitly-saved-item__fallback">Shoes</div>
-                        )}
+                    {/* Item 3: SHOES */}
+                    <div className="outfitly-saved-slot">
+                      <div className="outfitly-saved-slot__frame">
+                        <span className="outfitly-saved-slot__tag">03 / FOOTWEAR</span>
+                        <div className="outfitly-saved-slot__img-wrap">
+                          {shoesItem?.image ? (
+                            <img
+                              src={getImageUrl(shoesItem.image)}
+                              alt={shoesItem.name}
+                              className="outfitly-saved-slot__img"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="outfitly-saved-slot__fallback">Footwear</div>
+                          )}
+                        </div>
                       </div>
-                      <span className="outfitly-saved-item__name">{shoesItem?.name || `Item #${outfit.shoes}`}</span>
+                      <div className="outfitly-saved-slot__meta">
+                        <h4 className="outfitly-saved-slot__name">{shoesItem?.name || `Shoes #${outfit.shoes}`}</h4>
+                        <p className="outfitly-saved-slot__details">
+                          {shoesItem ? `${shoesItem.color} • ${shoesItem.style}` : 'Curated Garment'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Card Actions: Edit Outfit */}
-                  <div className="outfitly-saved-card__actions">
-                    <button
-                      type="button"
-                      onClick={() => handleEditOutfit(outfit, topItem, bottomItem, shoesItem)}
-                      className="outfitly-btn outfitly-btn--outline outfitly-btn--small outfitly-btn--full"
-                      aria-label={`Edit Outfit #${outfit.id}`}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        style={{ marginRight: '0.4rem' }}
+                  {/* Editorial Card Footer */}
+                  <div className="outfitly-saved-card__footer">
+                    <span className="outfitly-saved-card__pill">3-Piece Ensemble</span>
+                    <div className="outfitly-saved-card__actions">
+                      <button
+                        type="button"
+                        onClick={() => handleEditOutfit(outfit, topItem, bottomItem, shoesItem)}
+                        className="outfitly-btn outfitly-btn--outline outfitly-btn--small outfitly-saved-card__edit-btn"
+                        aria-label={`Edit Outfit #${outfit.id}`}
                       >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                      Edit Outfit
-                    </button>
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ marginRight: '0.4rem' }}
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit in Studio
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOutfit(outfit.id)}
+                        disabled={deletingId === outfit.id}
+                        className="outfitly-btn outfitly-btn--outline outfitly-btn--small outfitly-saved-card__delete-btn"
+                        aria-label={`Delete Outfit #${outfit.id}`}
+                        title="Delete this look from archive"
+                      >
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ marginRight: deletingId === outfit.id ? 0 : '0.4rem' }}
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        {deletingId === outfit.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
