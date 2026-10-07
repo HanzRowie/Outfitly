@@ -719,15 +719,25 @@ export const OutfitBuilder = () => {
               {!isScoring && outfitScore && (
                 <div className="outfitly-match-score-card__body">
                   <div className="outfitly-match-score-hero">
+                    <div className="outfitly-score-index-badge">
+                      <span className="outfitly-match-score-hero__metric">
+                        {outfitScore.overall}%
+                      </span>
+                      <span className="outfitly-score-index-label">HARMONY INDEX</span>
+                    </div>
+
                     <div className="outfitly-match-score-hero__meta">
-                      <span className="outfitly-match-score-hero__label">Overall Match</span>
+                      <span className="outfitly-match-score-hero__label">
+                        {outfitScore.overall >= 85
+                          ? 'Exceptional Harmony'
+                          : outfitScore.overall >= 70
+                          ? 'High Affinity'
+                          : 'Curated Ensemble'}
+                      </span>
                       <span className="outfitly-match-score-hero__sub">
-                        Rule-based algorithmic compatibility
+                        Verified algorithmic compatibility (40 / 30 / 30)
                       </span>
                     </div>
-                    <span className="outfitly-match-score-hero__metric">
-                      {outfitScore.overall}%
-                    </span>
                   </div>
 
                   <div className="outfitly-match-breakdown">
