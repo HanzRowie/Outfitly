@@ -294,15 +294,19 @@ export const RandomOutfit = () => {
 
                 <div className="outfitly-match-score-card__body">
                   <div className="outfitly-match-score-hero">
+                    <div className="outfitly-score-index-badge">
+                      <span className="outfitly-match-score-hero__metric">
+                        {outfit.score?.overall_match}%
+                      </span>
+                      <span className="outfitly-score-index-label">HARMONY INDEX</span>
+                    </div>
+
                     <div className="outfitly-match-score-hero__meta">
-                      <span className="outfitly-match-score-hero__label">Overall Score</span>
+                      <span className="outfitly-match-score-hero__label">Overall Compatibility</span>
                       <span className="outfitly-match-score-hero__sub">
-                        Evaluated across 20 randomized pairings
+                        Rule-based synthesized harmony
                       </span>
                     </div>
-                    <span className="outfitly-match-score-hero__metric">
-                      {outfit.score?.overall_match}%
-                    </span>
                   </div>
 
                   <div className="outfitly-match-breakdown">
