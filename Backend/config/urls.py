@@ -18,5 +18,6 @@ urlpatterns = [
     re_path(r'^profiles/(?P<path>.*)$', serve, {'document_root': BASE_DIR / 'profiles'}),
     re_path(r'^media/profiles/(?P<path>.*)$', serve, {'document_root': BASE_DIR / 'profiles'}),
     path("api/friends/", include("friends.urls")),
+    path("api/chat/", include("chat.urls")),
 ]
 
